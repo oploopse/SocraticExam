@@ -1,4 +1,4 @@
-# AI Interviewer
+# Socratic exam
 
 Hệ thống phỏng vấn để kiểm tra người học có thực sự hiểu bài hay chỉ học thuộc. Tải tài liệu lên, AI soạn câu hỏi theo từng mức độ hiểu, trò chuyện real-time bằng giọng nói (có thể ngắt lời), tự hỏi sâu khi câu trả lời còn nông, và chấm điểm ngầm trong suốt buổi.
 
