@@ -1,5 +1,6 @@
 import asyncio
 
+import pytest
 from google.genai import errors
 
 import google.genai.live as live_module
@@ -85,9 +86,61 @@ def test_live_websocket_tries_ipv4_in_parallel(monkeypatch):
     monkeypatch.setattr(live_module, "ws_connect", fake_connect)
     monkeypatch.setattr(live_module, "_happy_eyeballs_patched", False, raising=False)
 
+    async def connect():
+        return live_module.ws_connect("wss://generativelanguage.googleapis.com/ws")
+
+    prefer_reachable_ip()
+    assert asyncio.run(connect()) == "session"
+    assert captured["happy_eyeballs_delay"] == 0.25
+
+
+def test_live_websocket_skips_happy_eyeballs_on_uvloop(monkeypatch):
+    """uvloop.Loop không kế thừa asyncio.BaseEventLoop và không nhận happy_eyeballs_delay."""
+    captured = {}
+
+    def fake_connect(uri, **kwargs):
+        captured.update(kwargs)
+        return "session"
+
+    class UvloopLikeLoop(asyncio.AbstractEventLoop):
+        pass
+
+    monkeypatch.setattr(live_module, "ws_connect", fake_connect)
+    monkeypatch.setattr(live_module, "_happy_eyeballs_patched", False, raising=False)
+    monkeypatch.setattr("app.llm.asyncio.get_running_loop", lambda: UvloopLikeLoop())
+
     prefer_reachable_ip()
     assert live_module.ws_connect("wss://generativelanguage.googleapis.com/ws") == "session"
-    assert captured["happy_eyeballs_delay"] == 0.25
+    assert "happy_eyeballs_delay" not in captured
+
+
+def test_live_websocket_connects_under_real_uvloop(monkeypatch):
+    """Tái hiện lỗi trên Render: uvloop.create_connection() báo TypeError với happy_eyeballs_delay."""
+    uvloop = pytest.importorskip("uvloop")  # Không có trên Windows; CI chạy Linux giống Render.
+    captured = {}
+
+    def fake_connect(uri, **kwargs):
+        captured.update(kwargs)
+        return "session"
+
+    async def run():
+        session = live_module.ws_connect("wss://generativelanguage.googleapis.com/ws")
+        # Gọi đúng hàm đã gây lỗi trên Render, với các tham số bản vá vừa truyền xuống.
+        loop = asyncio.get_running_loop()
+        server = await loop.create_server(asyncio.Protocol, "127.0.0.1", 0)
+        port = server.sockets[0].getsockname()[1]
+        transport, _ = await loop.create_connection(asyncio.Protocol, "127.0.0.1", port, **captured)
+        transport.close()
+        server.close()
+        return session
+
+    monkeypatch.setattr(live_module, "ws_connect", fake_connect)
+    monkeypatch.setattr(live_module, "_happy_eyeballs_patched", False, raising=False)
+    prefer_reachable_ip()
+
+    with asyncio.Runner(loop_factory=uvloop.new_event_loop) as runner:
+        assert runner.run(run()) == "session"
+    assert "happy_eyeballs_delay" not in captured
 
 
 def _config():

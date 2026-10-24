@@ -41,6 +41,18 @@ class LLMError(RuntimeError):
     pass
 
 
+def _loop_supports_happy_eyeballs() -> bool:
+    """Chỉ event loop chuẩn của asyncio nhận happy_eyeballs_delay.
+
+    uvloop (uvicorn[standard] dùng trên Linux, ví dụ trên Render) báo TypeError với tham số này.
+    """
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return False
+    return isinstance(loop, asyncio.BaseEventLoop)
+
+
 def prefer_reachable_ip() -> None:
     """Bật Happy Eyeballs cho WebSocket Gemini Live.
 
@@ -54,7 +66,8 @@ def prefer_reachable_ip() -> None:
     original = live_module.ws_connect
 
     def ws_connect(uri, **kwargs):
-        kwargs.setdefault("happy_eyeballs_delay", 0.25)
+        if _loop_supports_happy_eyeballs():
+            kwargs.setdefault("happy_eyeballs_delay", 0.25)
         return original(uri, **kwargs)
 
     live_module.ws_connect = ws_connect
