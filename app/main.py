@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import logging
 import math
 import secrets
@@ -37,6 +38,7 @@ async def lifespan(_: FastAPI):
     else:
         log.warning("Chưa có GEMINI_API_KEY. Hãy điền key vào file .env rồi chạy lại .\\.venv\\Scripts\\python.exe -m app")
     yield
+    store.close()
 
 
 app = FastAPI(title="AI Interviewer", lifespan=lifespan)
@@ -220,6 +222,11 @@ async def upload_document(
     data = await file.read()
     if len(data) > settings.max_upload_mb * 1024 * 1024:
         raise HTTPException(413, f"File lớn hơn {settings.max_upload_mb} MB")
+    content_hash = hashlib.sha256(data).hexdigest()
+    cached = store.find_document_by_hash(content_hash)
+    if cached is not None:
+        log.info("Dùng lại bản đồ kiến thức của %s cho %s", cached.id, filename)
+        return document_summary(cached)
     try:
         blocks = await asyncio.to_thread(parse_document, filename, data)
     except UnsupportedFile as exc:
@@ -243,6 +250,7 @@ async def upload_document(
         filename=filename,
         char_count=sum(len(c.text) for c in chunks),
         truncated=truncated,
+        content_hash=content_hash,
         chunks=chunks,
         knowledge_map=knowledge_map,
     )

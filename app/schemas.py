@@ -55,6 +55,8 @@ class DocumentRecord(BaseModel):
     created_at: datetime = Field(default_factory=utcnow)
     char_count: int
     truncated: bool = False
+    # SHA-256 của file gốc, để tải lại cùng file thì dùng lại bản đồ kiến thức thay vì gọi Gemini.
+    content_hash: str | None = None
     chunks: list[Chunk]
     knowledge_map: KnowledgeMap
 

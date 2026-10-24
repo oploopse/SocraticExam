@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     max_upload_mb: int = 20
     max_document_chars: int = 200_000
     data_dir: Path = ROOT_DIR / "data"
+    # Chuỗi kết nối PostgreSQL (ví dụ Neon). Để trống thì lưu file JSON trong data_dir.
+    database_url: str = ""
     web_dir: Path = ROOT_DIR / "web"
 
 

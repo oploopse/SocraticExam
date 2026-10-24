@@ -82,6 +82,7 @@ Ngưỡng và trọng số nằm ở đầu `app/interview/director.py`.
 | Biến | Mặc định | Ý nghĩa |
 | --- | --- | --- |
 | `GEMINI_API_KEY` | | Key Gemini API |
+| `DATABASE_URL` | | Chuỗi kết nối PostgreSQL (ví dụ Neon). Để trống thì lưu file JSON trong `data/` |
 | `APP_ACCESS_TOKEN` | | Mật khẩu truy cập ứng dụng. Để trống khi chạy local; hãy đặt trước khi triển khai hoặc chia sẻ link |
 | `BRAIN_MODEL` | `gemini-3.8-flash` | Soạn bản đồ kiến thức, chấm điểm, viết báo cáo |
 | `FAST_MODEL` | `gemini-3.5-flash-lite` | Lời người phỏng vấn ở chế độ nhắn tin |
@@ -129,8 +130,16 @@ Muốn đổi model, thời lượng hay các biến khác ở bảng cấu hìn
 Lưu ý với gói free:
 
 - Service ngủ sau 15 phút không có ai dùng; lần mở đầu tiên sau đó mất khoảng một phút để chạy lại.
-- Ổ đĩa không lưu lâu dài: tài liệu và phiên trong `data/` mất mỗi lần deploy, restart hoặc ngủ dậy. Muốn giữ dữ liệu, nâng lên gói trả phí, gắn **Disk** (ví dụ mount ở `/var/data`) và đặt `DATA_DIR=/var/data`.
+- Ổ đĩa không lưu lâu dài: nếu không đặt `DATABASE_URL`, tài liệu và phiên trong `data/` mất mỗi lần deploy, restart hoặc ngủ dậy. Xem mục dưới để lưu vào Neon miễn phí.
 - Chỉ chạy một instance và một worker, vì phiên phỏng vấn giữ trạng thái trong bộ nhớ.
+
+### Lưu dữ liệu bằng Neon PostgreSQL
+
+1. Tạo project miễn phí trên [Neon](https://neon.tech), chọn region **AWS Asia Pacific (Singapore)** cho gần Render.
+2. Ở **Connection Details**, chép chuỗi kết nối dạng `postgresql://...?sslmode=require`.
+3. Trên Render, mở service `socratic-exam` > **Environment**, thêm `DATABASE_URL` với chuỗi vừa chép rồi lưu.
+
+App tự tạo bảng `records` khi khởi động. Mỗi tài liệu và phiên là một dòng JSONB. Lệnh ghi chạy ở một luồng riêng (write-behind) để cầu nối giọng nói không phải chờ database, kể cả khi Neon free mất vài giây để thức dậy. Tải lại đúng file đã tải trước đó (cùng SHA-256) sẽ dùng lại bản đồ kiến thức cũ, không gọi Gemini lần nữa.
 
 ## Lưu ý về free tier
 
@@ -159,7 +168,8 @@ app/
   knowledge.py       Sinh và chuẩn hóa bản đồ kiến thức
   prompts.py         Toàn bộ prompt (tiếng Việt)
   llm.py             Gọi Gemini, retry, JSON schema
-  storage.py         Lưu JSON trong data/
+  storage.py         Lưu JSON trong data/ hoặc PostgreSQL (Neon)
+  ratelimit.py       Giới hạn lượt gọi API tốn quota theo IP
   interview/
     engine.py        Điều phối phiên phỏng vấn
     director.py      Luật quyết định (không dùng LLM)

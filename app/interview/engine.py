@@ -13,7 +13,7 @@ from ..schemas import (
     TurnEvaluation,
     utcnow,
 )
-from ..storage import JsonStore, new_id
+from ..storage import Store, new_id
 from . import director
 from .evaluator import evaluate_answer
 from .interviewer import generate_utterance
@@ -36,7 +36,7 @@ class NoConceptsInRange(ValueError):
 
 
 class InterviewEngine:
-    def __init__(self, store: JsonStore):
+    def __init__(self, store: Store):
         self.store = store
         self.active_voice: set[str] = set()
         self._locks: dict[str, asyncio.Lock] = {}

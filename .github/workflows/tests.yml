@@ -8,6 +8,23 @@ on:
 jobs:
   pytest:
     runs-on: ubuntu-latest
+    services:
+      # Cho test PostgresStore (tests/test_storage.py) chạy với database thật.
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: socratic
+          POSTGRES_PASSWORD: socratic
+          POSTGRES_DB: socratic_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U socratic"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://socratic:socratic@localhost:5432/socratic_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -16,4 +33,4 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
       # Không cần GEMINI_API_KEY: test dùng LLM và phiên Gemini Live giả.
-      - run: pytest -q
+      - run: pytest -q -rs

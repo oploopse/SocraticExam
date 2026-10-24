@@ -21,6 +21,9 @@ services:
       # Mật khẩu truy cập. Render tự sinh chuỗi ngẫu nhiên; nên đổi thành mật khẩu dễ nhớ ở tab Environment.
       - key: APP_ACCESS_TOKEN
         generateValue: true
+      # Chuỗi kết nối Neon PostgreSQL; để trống thì lưu file JSON (mất khi Render deploy lại).
+      - key: DATABASE_URL
+        sync: false
       - key: BRAIN_MODEL
         value: gemini-3.8-flash
       - key: FAST_MODEL
