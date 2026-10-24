@@ -80,6 +80,30 @@ def test_misconception_triggers_challenge():
     assert "Nhầm A với B" in decision.note
 
 
+def test_confident_wrong_belief_is_challenged_not_hinted():
+    doc, session = setup_two_concepts()
+    evaluation = make_eval(correctness=0, completeness=0, confidence_signal="high", misconceptions=["Mỗi cổng chỉ có một socket"])
+    record(session, evaluation)
+    decision = director.decide(session, doc, evaluation, LIMITS)
+    assert decision.action == "challenge"
+
+
+def test_hesitant_wrong_guess_gets_a_hint():
+    doc, session = setup_two_concepts()
+    evaluation = make_eval(correctness=0, completeness=0, confidence_signal="low", misconceptions=["Đoán router đánh dấu gói"])
+    record(session, evaluation)
+    decision = director.decide(session, doc, evaluation, LIMITS)
+    assert decision.action == "hint"
+
+
+def test_wrong_answer_without_misconception_gets_a_hint():
+    doc, session = setup_two_concepts()
+    evaluation = make_eval(correctness=1, completeness=0, confidence_signal="high")
+    record(session, evaluation)
+    decision = director.decide(session, doc, evaluation, LIMITS)
+    assert decision.action == "hint"
+
+
 def test_clarification_request_does_not_count_as_evidence():
     doc, session = setup_two_concepts()
     session.progress["c1"].asked_questions.append("c1 là gì?")

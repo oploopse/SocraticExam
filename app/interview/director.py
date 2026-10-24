@@ -227,7 +227,7 @@ def decide(
     if progress.attempts >= limits.max_answers_per_concept + 2:
         return _advance(session, doc, limits, "Đã dùng hết số lượt cho chủ đề này")
 
-    if evaluation.intent == "dont_know" or evaluation.correctness <= 1:
+    def hint_or_advance() -> Directive:
         if progress.hints < limits.max_hints_per_concept:
             return Directive(
                 action="hint", concept_id=concept_id, question=question,
@@ -236,7 +236,17 @@ def decide(
             )
         return _advance(session, doc, limits, "Đã gợi ý nhưng người học vẫn chưa trả lời được")
 
-    if evaluation.misconceptions and progress.evidence_count < limits.max_answers_per_concept:
+    if evaluation.intent == "dont_know":
+        return hint_or_advance()
+
+    # Sai vì hiểu nhầm khác sai vì chưa biết: người học nói chắc chắn một điều sai thì cần phản ví dụ để
+    # tự thấy mâu thuẫn; còn đoán mò ("chắc là...") thì gợi ý một hướng suy nghĩ có ích hơn.
+    # Đo bằng evals/evaluator_eval.py: trước khi tách hai trường hợp, mọi câu hiểu lầm có correctness <= 1
+    # đều thành gợi ý.
+    holds_misconception = bool(evaluation.misconceptions) and (
+        evaluation.confidence_signal != "low" or evaluation.correctness >= 2
+    )
+    if holds_misconception and progress.evidence_count < limits.max_answers_per_concept:
         return Directive(
             action="challenge",
             concept_id=concept_id,
@@ -244,6 +254,9 @@ def decide(
             note="Người học có thể đang hiểu nhầm: " + "; ".join(evaluation.misconceptions),
             reason="Phát hiện hiểu lầm",
         )
+
+    if evaluation.correctness <= 1:
+        return hint_or_advance()
 
     strong_now = (
         evaluation.correctness >= 3

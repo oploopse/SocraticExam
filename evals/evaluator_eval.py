@@ -57,6 +57,7 @@ class CaseResult:
     misconceptions: list[str]
     summary: str
     error: str = ""
+    confidence_signal: str = ""
 
     @property
     def correct(self) -> bool:
@@ -109,6 +110,8 @@ async def run_case(doc: DocumentRecord, case: dict) -> CaseResult:
             misconceptions=[], summary="", error=str(exc),
         )
     session = fresh_session(doc, concept.id, case["question"])
+    # Cùng thứ tự với InterviewEngine: ghi nhận câu trả lời vào tiến độ rồi mới quyết định.
+    director.update_progress(session.progress[concept.id], evaluation, hint_given=False)
     directive = director.decide(session, doc, evaluation, LIMITS)
     return CaseResult(
         **base,
@@ -119,6 +122,7 @@ async def run_case(doc: DocumentRecord, case: dict) -> CaseResult:
         bloom_level=evaluation.bloom_level,
         misconceptions=evaluation.misconceptions,
         summary=evaluation.summary,
+        confidence_signal=evaluation.confidence_signal,
     )
 
 

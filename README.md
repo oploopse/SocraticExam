@@ -70,8 +70,8 @@ flowchart TB
 | --- | --- |
 | Đúng, đủ ý, đạt mức vận dụng | Chuyển chủ đề (hoặc kết thúc nếu hết chủ đề) |
 | Đúng nhưng nông, hoặc nghi học thuộc | Hỏi sâu bằng câu hỏi mức Bloom cao hơn |
-| Có hiểu lầm | Phản biện bằng tình huống, không nói thẳng là sai |
-| Không biết, sai nhiều | Gợi ý một lần, sau đó chuyển chủ đề |
+| Có hiểu lầm và nói chắc chắn | Phản biện bằng tình huống, không nói thẳng là sai |
+| Không biết, đoán mò, sai nhiều | Gợi ý một lần, sau đó chuyển chủ đề |
 | Hỏi lại, lạc đề, đang nghĩ | Diễn đạt lại, kéo về câu hỏi, động viên (không tính điểm) |
 | Hết số lượt cho chủ đề hoặc hết giờ | Chốt điểm, chuyển chủ đề hoặc kết thúc |
 
@@ -89,20 +89,27 @@ Script cho evaluator chấm từng câu, đưa kết quả qua đúng `director.
 
 Cần `GEMINI_API_KEY` trong `.env`; mỗi lần chạy gọi `BRAIN_MODEL` 42 lần (free tier nên giữ `--concurrency 1` hoặc `2`). Báo cáo được ghi vào `evals/results/`.
 
-Kết quả lần đo đầu tiên (24/10/2026, [báo cáo đầy đủ](evals/results/2026-10-24-2241-gemini-3.8-flash.md)):
+Kết quả trước và sau khi sửa luật phản biện (24/10/2026, báo cáo đầy đủ: [trước](evals/results/2026-10-24-2241-gemini-3.8-flash.md), [sau](evals/results/2026-10-24-2251-gemini-3.8-flash.md)):
 
-| Chỉ số | Giá trị |
-| --- | --- |
-| Khớp hành động với nhãn tay | **79%** (33/42) |
-| Cohen's kappa | 0.73 |
-| Chuyển chủ đề, diễn đạt lại, động viên, kéo về câu hỏi | 100% precision và recall |
-| Hỏi sâu | 100% precision, 92% recall |
-| Phản biện | **0%**: cả 8 ca hiểu lầm đều thành gợi ý |
-| Bắt được dấu hiệu học thuộc | 40% (2/5 ca có `rote_signal = high`) |
+| Chỉ số | Trước | Sau |
+| --- | --- | --- |
+| Khớp hành động với nhãn tay | 79% (33/42) | **83%** (35/42) |
+| Cohen's kappa | 0.73 | **0.79** |
+| Phản biện khi có hiểu lầm (recall) | 0% (0/8) | **100%** (8/8) |
+| Gợi ý khi chưa biết hoặc sai (recall) | 100% (8/8) | 62% (5/8) |
+| Bắt được dấu hiệu học thuộc | 40% (2/5) | 20% (1/5) |
 
-Bộ đo tìm ra một lỗi trong luật chứ không phải trong evaluator. Evaluator ghi nhận đúng hiểu lầm ở cả 8/8 ca, nhưng chấm `correctness` 0–1, và director kiểm tra "correctness ≤ 1 thì gợi ý" trước "có hiểu lầm thì phản biện", nên nhánh phản biện không bao giờ chạy tới, trái với bảng luật phía trên. Chỉ đảo thứ tự cũng chưa đủ: 4 ca trả lời sai cũng được ghi nhận có hiểu lầm, nên cần luật rõ hơn để phân biệt "sai vì chưa biết" với "sai vì hiểu nhầm". Dấu hiệu học thuộc bắt được còn yếu, nhưng không làm sai quyết định vì các câu đó vẫn được hỏi sâu.
+**Lần đo đầu tìm ra lỗi trong luật, không phải trong evaluator.** Evaluator ghi nhận đúng hiểu lầm ở cả 8/8 câu nhưng chấm `correctness` 0–1, và director kiểm tra "correctness ≤ 1 thì gợi ý" trước "có hiểu lầm thì phản biện", nên nhánh phản biện không bao giờ chạy tới, trái với bảng luật phía trên.
 
-Lưu ý: free tier hay báo 503 hoặc quá giờ, nên một số lượt chấm trong lần đo này đã tự chuyển sang model dự phòng (`gemini-3.7-flash`, `gemini-3.6-flash`, `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`).
+**Cách sửa:** tách "sai vì hiểu nhầm" khỏi "sai vì chưa biết" bằng `confidence_signal` mà evaluator vốn đã chấm từ cách diễn đạt. Người học nói chắc chắn một điều sai thì được phản biện bằng phản ví dụ để tự thấy mâu thuẫn; người học đoán mò ("chắc là…") hoặc nói không biết thì được gợi ý.
+
+**Những gì còn lệch sau khi sửa:**
+
+- 3/4 câu trả lời sai được evaluator chấm độ tự tin `medium` nên bị phản biện thay vì gợi ý. Cả 8 câu hiểu lầm đều được chấm `high`, nên đổi ngưỡng thành `confidence == "high"` sẽ tách đúng hoàn toàn trong lần đo này. Chưa đổi, vì chỉnh luật theo chính bộ dữ liệu dùng để đo là overfitting: cần thêm câu trả lời mẫu mới (tập kiểm tra riêng) để xác nhận trước.
+- 3 câu lệch ở những nhánh luật không đổi (`c3-strong-1`, `c3-strong-2`, `c4-thinking-1`): giữa hai lần chạy, Gemini chấm mức Bloom và ý định khác nhau cho cùng một câu. Muốn so sánh chắc chắn hơn cần chạy nhiều lần rồi lấy trung bình.
+- Dấu hiệu học thuộc vẫn bắt được kém, nhưng chưa làm sai quyết định vì các câu đó vẫn được hỏi sâu.
+
+Lưu ý: free tier hay báo 503 hoặc quá giờ, nên một số lượt chấm trong cả hai lần đo đã tự chuyển sang model dự phòng (`gemini-3.7-flash`, `gemini-3.6-flash`, `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`).
 
 ## Cấu hình (`.env`)
 
