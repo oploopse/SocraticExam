@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     max_answers_per_concept: int = 4
     max_hints_per_concept: int = 1
 
+    # Số lượt tối đa mỗi giờ cho một IP, để link demo công khai không làm cạn quota Gemini. 0 = không giới hạn.
+    rate_limit_uploads_per_hour: int = 10
+    rate_limit_sessions_per_hour: int = 20
+    rate_limit_messages_per_hour: int = 300
+
     max_upload_mb: int = 20
     max_document_chars: int = 200_000
     data_dir: Path = ROOT_DIR / "data"

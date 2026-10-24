@@ -6,6 +6,7 @@ import app.interview.interviewer as interviewer_module
 import app.interview.report as report_module
 import app.knowledge as knowledge_module
 import app.main as main
+from app.ratelimit import limiter
 from app.schemas import ConceptFeedback, KnowledgeMap, ReportNarrative, TurnEvaluation
 from app.storage import JsonStore
 
@@ -30,6 +31,14 @@ async def fake_generate_json(model, system, prompt, schema, thinking_level=None,
 
 async def fake_generate_text(model, system, prompt, thinking_level=None):
     return "Câu nói của người phỏng vấn"
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limits():
+    """Mỗi test bắt đầu với bộ đếm lượt trống, để các test không ăn lượt của nhau."""
+    limiter.clear()
+    yield
+    limiter.clear()
 
 
 @pytest.fixture

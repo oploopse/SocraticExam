@@ -1,5 +1,7 @@
 # Socratic exam
 
+[![Tests](https://github.com/oploopse/SocraticExam/actions/workflows/tests.yml/badge.svg)](https://github.com/oploopse/SocraticExam/actions/workflows/tests.yml)
+
 Hệ thống phỏng vấn để kiểm tra người học có thực sự hiểu bài hay chỉ học thuộc. Tải tài liệu lên, AI soạn câu hỏi theo từng mức độ hiểu, trò chuyện real-time bằng giọng nói (có thể ngắt lời), tự hỏi sâu khi câu trả lời còn nông, và chấm điểm ngầm trong suốt buổi.
 
 - **Giọng nói real-time** qua Gemini Live (`gemini-3.8-live`): người học ngắt lời được, AI dừng ngay.
@@ -97,6 +99,9 @@ Ngưỡng và trọng số nằm ở đầu `app/interview/director.py`.
 | `MAX_CONCEPTS_PER_SESSION` | `6` | Số chủ đề tối đa mỗi buổi |
 | `MAX_ANSWERS_PER_CONCEPT` | `4` | Số câu trả lời tối đa cho một chủ đề |
 | `MAX_HINTS_PER_CONCEPT` | `1` | Số lần gợi ý tối đa cho một chủ đề |
+| `RATE_LIMIT_UPLOADS_PER_HOUR` | `10` | Số lần tải tài liệu tối đa mỗi giờ cho một IP (`0` = không giới hạn) |
+| `RATE_LIMIT_SESSIONS_PER_HOUR` | `20` | Số buổi phỏng vấn tạo mới tối đa mỗi giờ cho một IP |
+| `RATE_LIMIT_MESSAGES_PER_HOUR` | `300` | Số câu trả lời ở chế độ nhắn tin tối đa mỗi giờ cho một IP |
 
 Model báo quá tải (429/503) hoặc quá giờ sẽ bị bỏ qua 60 giây để các lượt sau đi thẳng tới model dự phòng.
 

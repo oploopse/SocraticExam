@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import math
 import secrets
 from contextlib import asynccontextmanager
 from typing import Literal
@@ -15,6 +16,7 @@ from .interview import director
 from .interview.engine import InterviewEngine, NoConceptsInRange, SessionFinished, SessionNotFound
 from .knowledge import build_knowledge_map
 from .llm import LLMError, LLMNotConfigured
+from .ratelimit import limiter
 from .schemas import DocumentRecord, Report, SessionRecord
 from .storage import new_id, store
 from .voice import VoiceBridge
@@ -107,6 +109,31 @@ def _access_dependency(request: Request) -> None:
     _require_access(request)
 
 
+def _rate_limited(bucket: str, label: str):
+    """Dependency giới hạn số lượt mỗi giờ theo IP; ngưỡng đọc từ settings.rate_limit_<bucket>_per_hour."""
+
+    def dependency(request: Request) -> None:
+        limit = getattr(settings, f"rate_limit_{bucket}_per_hour")
+        if limit <= 0:
+            return
+        client_ip = request.client.host if request.client else "unknown"
+        wait_s = limiter.hit(bucket, client_ip, limit)
+        if wait_s is not None:
+            minutes = max(1, math.ceil(wait_s / 60))
+            raise HTTPException(
+                429,
+                f"Bạn đã dùng hết {limit} lượt {label} trong một giờ. Thử lại sau khoảng {minutes} phút.",
+                headers={"Retry-After": str(math.ceil(wait_s))},
+            )
+
+    return dependency
+
+
+_upload_limit = Depends(_rate_limited("uploads", "tải tài liệu"))
+_session_limit = Depends(_rate_limited("sessions", "tạo buổi phỏng vấn"))
+_message_limit = Depends(_rate_limited("messages", "gửi câu trả lời"))
+
+
 @app.post("/api/auth/login")
 def login(body: LoginIn, request: Request, response: Response) -> dict:
     if not settings.app_access_token or not secrets.compare_digest(body.token, settings.app_access_token):
@@ -184,7 +211,9 @@ def health() -> dict:
 
 
 @app.post("/api/documents")
-async def upload_document(file: UploadFile = File(...), _: None = Depends(_access_dependency)) -> dict:
+async def upload_document(
+    file: UploadFile = File(...), _: None = Depends(_access_dependency), __: None = _upload_limit
+) -> dict:
     filename = file.filename or "tai-lieu.txt"
     if not any(filename.lower().endswith(ext) for ext in SUPPORTED_EXTENSIONS):
         raise HTTPException(400, "Chỉ hỗ trợ file PDF, DOCX, TXT hoặc MD")
@@ -233,7 +262,7 @@ def get_document(doc_id: str, _: None = Depends(_access_dependency)) -> dict:
 
 
 @app.post("/api/sessions")
-async def create_session(body: SessionCreate, _: None = Depends(_access_dependency)) -> dict:
+async def create_session(body: SessionCreate, _: None = Depends(_access_dependency), __: None = _session_limit) -> dict:
     doc = _document_or_404(body.document_id)
     learner_name = body.learner_name.strip() or "bạn"
     page_count = max((c.page for c in doc.chunks if c.page), default=None)
@@ -256,7 +285,9 @@ def get_session(session_id: str, _: None = Depends(_access_dependency)) -> dict:
 
 
 @app.post("/api/sessions/{session_id}/messages")
-async def post_message(session_id: str, body: AnswerIn, _: None = Depends(_access_dependency)) -> dict:
+async def post_message(
+    session_id: str, body: AnswerIn, _: None = Depends(_access_dependency), __: None = _message_limit
+) -> dict:
     session = _session_or_404(session_id)
     if session.mode != "text":
         raise HTTPException(409, "Phiên này dùng chế độ giọng nói")
