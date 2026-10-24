@@ -100,7 +100,7 @@ def _require_access(request: Request) -> None:
     authorization = request.headers.get("authorization", "")
     supplied = authorization.removeprefix("Bearer ").strip() or request.cookies.get("app_access_token", "")
     if not secrets.compare_digest(supplied, expected):
-        raise HTTPException(401, "Cần đăng nhập để sử dụng ứng dụng")
+        raise HTTPException(401, "Cần nhập mật khẩu để sử dụng ứng dụng")
 
 
 def _access_dependency(request: Request) -> None:
@@ -110,7 +110,7 @@ def _access_dependency(request: Request) -> None:
 @app.post("/api/auth/login")
 def login(body: LoginIn, request: Request, response: Response) -> dict:
     if not settings.app_access_token or not secrets.compare_digest(body.token, settings.app_access_token):
-        raise HTTPException(401, "Token đăng nhập không hợp lệ")
+        raise HTTPException(401, "Mật khẩu không đúng")
     response.set_cookie(
         "app_access_token",
         body.token,

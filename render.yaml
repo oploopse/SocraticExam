@@ -18,7 +18,7 @@ services:
       # Điền trên dashboard khi tạo Blueprint; không commit key vào repo.
       - key: GEMINI_API_KEY
         sync: false
-      # Render tự sinh chuỗi ngẫu nhiên; xem và gửi cho người dùng thử ở tab Environment.
+      # Mật khẩu truy cập. Render tự sinh chuỗi ngẫu nhiên; nên đổi thành mật khẩu dễ nhớ ở tab Environment.
       - key: APP_ACCESS_TOKEN
         generateValue: true
       - key: BRAIN_MODEL

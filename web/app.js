@@ -53,7 +53,7 @@ async function api(path, options = {}, retryAuth = true) {
   };
   const response = await fetch(path, { ...options, headers });
   if (response.status === 401 && retryAuth && path !== "/api/auth/login") {
-    const token = window.prompt("Nhập APP_ACCESS_TOKEN để đăng nhập:");
+    const token = window.prompt("Nhập mật khẩu để dùng ứng dụng:");
     if (token) {
       const login = await fetch("/api/auth/login", {
         method: "POST",

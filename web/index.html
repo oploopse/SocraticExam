@@ -225,6 +225,24 @@
     </div>
   </dialog>
 
+  <dialog class="confirm-dialog login-dialog" id="login-dialog" aria-labelledby="login-title" aria-describedby="login-text">
+    <form id="login-form" novalidate>
+      <span class="login-badge" aria-hidden="true">
+        <span class="icon" style="--icon: url('/assets/icons/lock.svg'); --size: 20px"></span>
+      </span>
+      <h2 id="login-title">Nhập mật khẩu để dùng thử</h2>
+      <p id="login-text">Bản demo này cần mật khẩu truy cập. Mật khẩu được gửi kèm đường link bạn nhận được.</p>
+      <div class="text-field is-wide" id="login-field">
+        <label for="login-password">Mật khẩu</label>
+        <input id="login-password" type="password" autocomplete="current-password" maxlength="256" aria-describedby="login-error">
+        <p class="text-field-error" id="login-error" role="alert" hidden></p>
+      </div>
+      <div class="flow-actions">
+        <button type="submit" class="btn-pill btn-solid" id="login-submit">Vào ứng dụng</button>
+      </div>
+    </form>
+  </dialog>
+
   <footer class="app-footer" id="app-footer">
     <p>© 2026 Socratic Exam · Hackathon CNTT 2026 · Khoa CNTT, Trường Đại học Xây dựng Hà Nội</p>
   </footer>

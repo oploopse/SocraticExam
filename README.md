@@ -80,7 +80,7 @@ Ngưỡng và trọng số nằm ở đầu `app/interview/director.py`.
 | Biến | Mặc định | Ý nghĩa |
 | --- | --- | --- |
 | `GEMINI_API_KEY` | | Key Gemini API |
-| `APP_ACCESS_TOKEN` | | Token truy cập ứng dụng. Hãy đặt chuỗi ngẫu nhiên dài trước khi triển khai hoặc chia sẻ ứng dụng |
+| `APP_ACCESS_TOKEN` | | Mật khẩu truy cập ứng dụng. Để trống khi chạy local; hãy đặt trước khi triển khai hoặc chia sẻ link |
 | `BRAIN_MODEL` | `gemini-3.8-flash` | Soạn bản đồ kiến thức, chấm điểm, viết báo cáo |
 | `FAST_MODEL` | `gemini-3.5-flash-lite` | Lời người phỏng vấn ở chế độ nhắn tin |
 | `LIVE_MODEL` | `gemini-3.8-live` | Hội thoại giọng nói |
@@ -106,8 +106,8 @@ Nhận dạng giọng nói trong phòng ồn và khi chêm thuật ngữ tiếng
 - Gemini Live được gợi ý ngôn ngữ (`SPEECH_LANGUAGE` + `TERM_LANGUAGES`) và danh sách thuật ngữ lấy từ tài liệu, nên nghe đúng các từ như TCP, checksum, multiplexing mà bản chép vẫn giữ tiếng Việt.
 - Nếu người học hoặc AI nói phần lớn bằng tiếng nước ngoài, máy chủ gửi ngay chỉ thị ẩn nhắc AI quay lại tiếng Việt.
 
-Khi `APP_ACCESS_TOKEN` được cấu hình, API và WebSocket yêu cầu đăng nhập bằng token này.
-Giao diện sẽ hỏi token lần đầu và lưu token trong cookie HttpOnly của phiên trình duyệt.
+Khi `APP_ACCESS_TOKEN` được cấu hình, API và WebSocket yêu cầu nhập mật khẩu này.
+Giao diện hiện hộp nhập mật khẩu ngay trên trang (không dùng `window.prompt()`, vốn bị chặn trong trình duyệt của Zalo, Messenger) và lưu mật khẩu trong cookie HttpOnly của phiên trình duyệt.
 Không commit file `.env`; chỉ commit `.env.example` với placeholder.
 
 ## Triển khai lên Render
@@ -116,8 +116,8 @@ Cả backend lẫn giao diện `web/` chạy chung một service, nên không c�
 
 1. Đẩy repo lên GitHub.
 2. Trên [Render](https://dashboard.render.com), chọn **New > Blueprint**, trỏ tới repo. Render đọc `render.yaml` và tạo service `socratic-exam`.
-3. Khi được hỏi, điền `GEMINI_API_KEY`. `APP_ACCESS_TOKEN` được sinh ngẫu nhiên; mở tab **Environment** của service để xem và gửi token cho người dùng thử.
-4. Đợi build xong, mở `https://<tên-service>.onrender.com`, nhập token, rồi thử tải tài liệu và nói chuyện.
+3. Khi được hỏi, điền `GEMINI_API_KEY`. Mật khẩu truy cập `APP_ACCESS_TOKEN` được sinh ngẫu nhiên; mở tab **Environment** của service để xem, hoặc đổi thành mật khẩu dễ nhớ hơn, rồi gửi kèm link cho người dùng thử.
+4. Đợi build xong, mở `https://<tên-service>.onrender.com`, nhập mật khẩu, rồi thử tải tài liệu và nói chuyện.
 
 Muốn đổi model, thời lượng hay các biến khác ở bảng cấu hình phía trên, sửa trong tab **Environment**; Render tự khởi động lại service. Mỗi lần push lên nhánh chính, Render tự deploy lại.
 

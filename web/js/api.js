@@ -1,5 +1,7 @@
 // Gọi API của backend (app/main.py), cùng các endpoint mà giao diện cũ (web/app.js) dùng.
 
+import { askPassword } from "./login.js";
+
 export class ApiError extends Error {
   constructor(message, status) {
     super(message);
@@ -21,24 +23,26 @@ function errorMessage(status, data) {
 
 let pendingLogin = null;
 
-// Backend bật APP_ACCESS_TOKEN thì mọi API trả 401 cho tới khi đăng nhập; cookie HttpOnly do /api/auth/login đặt
-// được gửi kèm cả các request sau và WebSocket. Nhiều request cùng gặp 401 chỉ hỏi token một lần.
+/** Trả về null khi đăng nhập được, hoặc câu báo lỗi cho hộp mật khẩu. */
+async function submitPassword(password) {
+  try {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ token: password }),
+    });
+    if (response.ok) return null;
+    return response.status === 401 ? "Mật khẩu không đúng." : `Máy chủ báo lỗi (HTTP ${response.status}).`;
+  } catch {
+    return "Không kết nối được máy chủ.";
+  }
+}
+
+// Backend bật APP_ACCESS_TOKEN (mật khẩu truy cập) thì mọi API trả 401 cho tới khi đăng nhập; cookie HttpOnly do
+// /api/auth/login đặt được gửi kèm cả các request sau và WebSocket. Nhiều request cùng gặp 401 chỉ hỏi một lần.
 function login() {
   if (!pendingLogin) {
-    pendingLogin = (async () => {
-      const token = window.prompt("Nhập APP_ACCESS_TOKEN để đăng nhập:");
-      if (!token) return false;
-      try {
-        const response = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({ token: token.trim() }),
-        });
-        return response.ok;
-      } catch {
-        return false;
-      }
-    })().finally(() => {
+    pendingLogin = askPassword(submitPassword).finally(() => {
       pendingLogin = null;
     });
   }
