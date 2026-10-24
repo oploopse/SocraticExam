@@ -89,6 +89,21 @@ Script cho evaluator chấm từng câu, đưa kết quả qua đúng `director.
 
 Cần `GEMINI_API_KEY` trong `.env`; mỗi lần chạy gọi `BRAIN_MODEL` 42 lần (free tier nên giữ `--concurrency 1` hoặc `2`). Báo cáo được ghi vào `evals/results/`.
 
+Kết quả lần đo đầu tiên (24/10/2026, [báo cáo đầy đủ](evals/results/2026-10-24-2241-gemini-3.8-flash.md)):
+
+| Chỉ số | Giá trị |
+| --- | --- |
+| Khớp hành động với nhãn tay | **79%** (33/42) |
+| Cohen's kappa | 0.73 |
+| Chuyển chủ đề, diễn đạt lại, động viên, kéo về câu hỏi | 100% precision và recall |
+| Hỏi sâu | 100% precision, 92% recall |
+| Phản biện | **0%**: cả 8 ca hiểu lầm đều thành gợi ý |
+| Bắt được dấu hiệu học thuộc | 40% (2/5 ca có `rote_signal = high`) |
+
+Bộ đo tìm ra một lỗi trong luật chứ không phải trong evaluator. Evaluator ghi nhận đúng hiểu lầm ở cả 8/8 ca, nhưng chấm `correctness` 0–1, và director kiểm tra "correctness ≤ 1 thì gợi ý" trước "có hiểu lầm thì phản biện", nên nhánh phản biện không bao giờ chạy tới, trái với bảng luật phía trên. Chỉ đảo thứ tự cũng chưa đủ: 4 ca trả lời sai cũng được ghi nhận có hiểu lầm, nên cần luật rõ hơn để phân biệt "sai vì chưa biết" với "sai vì hiểu nhầm". Dấu hiệu học thuộc bắt được còn yếu, nhưng không làm sai quyết định vì các câu đó vẫn được hỏi sâu.
+
+Lưu ý: free tier hay báo 503 hoặc quá giờ, nên một số lượt chấm trong lần đo này đã tự chuyển sang model dự phòng (`gemini-3.7-flash`, `gemini-3.6-flash`, `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`).
+
 ## Cấu hình (`.env`)
 
 | Biến | Mặc định | Ý nghĩa |
