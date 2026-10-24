@@ -1,0 +1,154 @@
+{
+  "description": "Câu trả lời mẫu có nhãn tay để đo evaluator + director. Nhãn expected_action là việc một giáo viên sẽ làm ở lượt đầu tiên của chủ đề, theo bảng 'Luật của director' trong README.",
+  "document": {
+    "title": "Mạng máy tính · Chương 3: Tầng giao vận",
+    "summary": "Vai trò của tầng giao vận, dồn kênh và phân kênh, UDP và TCP, truyền dữ liệu tin cậy, kiểm soát luồng và kiểm soát tắc nghẽn.",
+    "chunks": [
+      {"id": "ch1", "page": 3, "text": "Việc chuyển dữ liệu trong đoạn đến đúng socket gọi là phân kênh (demultiplexing). Công việc ngược lại ở bên gửi, tức gom dữ liệu từ nhiều socket, gắn tiêu đề rồi chuyển xuống tầng mạng, gọi là dồn kênh (multiplexing). Mỗi đoạn mang số hiệu cổng nguồn và số hiệu cổng đích. Với UDP, một socket được xác định bởi cặp (địa chỉ IP đích, cổng đích). Hai đoạn đến từ hai máy khác nhau nhưng có cùng địa chỉ IP đích và cùng cổng đích sẽ được chuyển vào cùng một socket. Với TCP, một socket được xác định bởi bộ bốn (IP nguồn, cổng nguồn, IP đích, cổng đích). Nhờ vậy, một máy chủ web có thể giữ nhiều socket cùng dùng cổng 80, mỗi socket phục vụ một kết nối riêng."},
+      {"id": "ch2", "page": 3, "text": "UDP chỉ làm những việc tối thiểu: dồn kênh, phân kênh và kiểm tra lỗi đơn giản. UDP vẫn phù hợp với nhiều ứng dụng: không cần thiết lập kết nối nên không mất thêm thời gian khứ hồi trước khi gửi dữ liệu (lý do DNS dùng UDP); không giữ trạng thái kết nối nên máy chủ phục vụ được nhiều máy khách hơn; tiêu đề chỉ 8 byte so với 20 byte của TCP; ứng dụng kiểm soát tốt hơn thời điểm gửi vì dữ liệu không bị kiểm soát tắc nghẽn làm chậm lại. Âm thanh, hình ảnh thời gian thực, trò chơi trực tuyến và QUIC chạy trên UDP. TCP hướng kết nối, bắt tay ba bước, đảm bảo dữ liệu đến đủ, không lỗi và đúng thứ tự, có kiểm soát luồng và tắc nghẽn; dùng cho web, thư điện tử, truyền tệp."},
+      {"id": "ch3", "page": 5, "text": "Dừng và chờ (stop-and-wait): bên gửi gửi một gói rồi chờ ACK mới gửi gói tiếp theo. Xét đường truyền 1 Gbps, RTT 30 ms, gói 1.000 byte: L/R = 8 micro giây, hiệu suất U = (L/R) / (RTT + L/R) ≈ 0,00027. Đường ống (pipelining) cho phép gửi nhiều gói khi chưa nhận được báo nhận; ba gói cùng ở trên đường thì hiệu suất tăng gần gấp ba. Đường ống đòi hỏi dải số thứ tự lớn hơn và bộ đệm ở cả hai phía. Go-Back-N dùng ACK tích lũy và gửi lại gói cũ nhất cùng toàn bộ gói sau nó; Lặp lại có chọn lọc báo nhận riêng từng gói và chỉ gửi lại gói bị nghi là mất."},
+      {"id": "ch4", "page": 6, "text": "Kiểm soát luồng giúp bên gửi không làm tràn bộ đệm của bên nhận. Bên nhận quảng bá cửa sổ nhận rwnd = RcvBuffer − (LastByteRcvd − LastByteRead); bên gửi giữ LastByteSent − LastByteAcked ≤ rwnd. Khi rwnd bằng 0, bên gửi vẫn gửi đoạn thăm dò 1 byte để biết khi nào bộ đệm có chỗ. Kiểm soát luồng bảo vệ bên nhận khỏi bị gửi quá nhanh; kiểm soát tắc nghẽn bảo vệ mạng khỏi bị quá tải. Bên gửi tự suy ra tắc nghẽn từ hết giờ và ba ACK trùng lặp, duy trì cwnd và giới hạn dữ liệu chưa báo nhận ≤ min(cwnd, rwnd)."}
+    ],
+    "concepts": [
+      {
+        "id": "c1",
+        "name": "Dồn kênh, phân kênh và cách xác định socket",
+        "summary": "Tầng giao vận dùng số hiệu cổng để đưa dữ liệu đến đúng socket; UDP xác định socket bằng (IP đích, cổng đích), TCP bằng bộ bốn.",
+        "importance": 3,
+        "prerequisites": [],
+        "source_chunks": ["ch1"],
+        "key_points": [
+          {"id": "c1.k1", "text": "Phân kênh là chuyển dữ liệu của đoạn đến đúng socket; dồn kênh là gom dữ liệu từ nhiều socket ở bên gửi"},
+          {"id": "c1.k2", "text": "Socket UDP được xác định bởi (IP đích, cổng đích)"},
+          {"id": "c1.k3", "text": "Socket TCP được xác định bởi bộ bốn (IP nguồn, cổng nguồn, IP đích, cổng đích)"},
+          {"id": "c1.k4", "text": "Nhờ bộ bốn, máy chủ web giữ nhiều socket cùng cổng 80, mỗi socket một kết nối"}
+        ],
+        "misconceptions": [
+          "Cho rằng mỗi cổng chỉ có đúng một socket TCP",
+          "Cho rằng phân kênh dựa vào địa chỉ MAC hoặc chỉ dựa vào địa chỉ IP"
+        ],
+        "questions": [
+          {"bloom_level": 2, "text": "Phân kênh ở tầng giao vận là gì, và nó dựa vào thông tin nào?"},
+          {"bloom_level": 3, "text": "Hai trình duyệt khác nhau cùng kết nối tới cổng 80 của một máy chủ web. Máy chủ phân biệt dữ liệu của hai kết nối bằng cách nào?"},
+          {"bloom_level": 4, "text": "Vì sao UDP chỉ cần IP đích và cổng đích để xác định socket, còn TCP cần cả bộ bốn?"}
+        ]
+      },
+      {
+        "id": "c2",
+        "name": "Chọn UDP hay TCP",
+        "summary": "UDP không kết nối, gọn nhẹ và không bị kiểm soát tắc nghẽn làm chậm; TCP tin cậy, đúng thứ tự nhưng tốn bắt tay và trạng thái.",
+        "importance": 3,
+        "prerequisites": ["c1"],
+        "source_chunks": ["ch2"],
+        "key_points": [
+          {"id": "c2.k1", "text": "UDP không cần thiết lập kết nối nên không mất thêm RTT trước khi gửi"},
+          {"id": "c2.k2", "text": "UDP không giữ trạng thái và tiêu đề chỉ 8 byte"},
+          {"id": "c2.k3", "text": "UDP không bị kiểm soát tắc nghẽn làm chậm, hợp với ứng dụng thời gian thực"},
+          {"id": "c2.k4", "text": "TCP đảm bảo dữ liệu đến đủ, không lỗi, đúng thứ tự, phù hợp web, thư, truyền tệp"}
+        ],
+        "misconceptions": [
+          "Cho rằng UDP luôn nhanh hơn TCP trong mọi trường hợp vì 'không kiểm tra lỗi'",
+          "Cho rằng UDP hoàn toàn không phát hiện lỗi"
+        ],
+        "questions": [
+          {"bloom_level": 2, "text": "Khác nhau chính giữa UDP và TCP là gì?"},
+          {"bloom_level": 3, "text": "Một ứng dụng gọi video thời gian thực nên dùng UDP hay TCP? Vì sao?"},
+          {"bloom_level": 4, "text": "Vì sao DNS chọn UDP dù UDP không đảm bảo độ tin cậy?"}
+        ]
+      },
+      {
+        "id": "c3",
+        "name": "Dừng và chờ so với đường ống",
+        "summary": "Dừng và chờ đúng nhưng lãng phí đường truyền khi RTT lớn; đường ống cho phép nhiều gói chưa báo nhận để tăng hiệu suất.",
+        "importance": 2,
+        "prerequisites": [],
+        "source_chunks": ["ch3"],
+        "key_points": [
+          {"id": "c3.k1", "text": "Dừng và chờ chỉ gửi gói tiếp theo sau khi nhận ACK của gói trước"},
+          {"id": "c3.k2", "text": "Hiệu suất U = (L/R) / (RTT + L/R), rất thấp khi RTT lớn so với L/R"},
+          {"id": "c3.k3", "text": "Đường ống cho nhiều gói cùng ở trên đường, hiệu suất tăng gần tỉ lệ số gói"},
+          {"id": "c3.k4", "text": "Đường ống cần dải số thứ tự lớn hơn và bộ đệm ở hai phía"}
+        ],
+        "misconceptions": [
+          "Cho rằng dừng và chờ chậm vì đường truyền có băng thông thấp",
+          "Cho rằng đường ống làm tăng băng thông của đường truyền"
+        ],
+        "questions": [
+          {"bloom_level": 2, "text": "Vì sao giao thức dừng và chờ lại sử dụng đường truyền kém hiệu quả?"},
+          {"bloom_level": 3, "text": "Với đường truyền 1 Gbps, RTT 30 ms và gói 1.000 byte, hiệu suất của dừng và chờ khoảng bao nhiêu?"},
+          {"bloom_level": 4, "text": "Đường ống cải thiện hiệu suất bằng cách nào, và nó đòi hỏi thêm những gì?"}
+        ]
+      },
+      {
+        "id": "c4",
+        "name": "Kiểm soát luồng và kiểm soát tắc nghẽn",
+        "summary": "Kiểm soát luồng dùng rwnd để không làm tràn bộ đệm bên nhận; kiểm soát tắc nghẽn dùng cwnd để không làm quá tải mạng.",
+        "importance": 3,
+        "prerequisites": [],
+        "source_chunks": ["ch4"],
+        "key_points": [
+          {"id": "c4.k1", "text": "Kiểm soát luồng bảo vệ bộ đệm của bên nhận"},
+          {"id": "c4.k2", "text": "Bên nhận quảng bá rwnd là phần còn trống của bộ đệm"},
+          {"id": "c4.k3", "text": "Kiểm soát tắc nghẽn bảo vệ mạng, bên gửi suy ra từ hết giờ hoặc ba ACK trùng"},
+          {"id": "c4.k4", "text": "Lượng dữ liệu chưa báo nhận không vượt quá min(cwnd, rwnd)"}
+        ],
+        "misconceptions": [
+          "Đồng nhất kiểm soát luồng với kiểm soát tắc nghẽn",
+          "Cho rằng bộ định tuyến báo trực tiếp cho bên gửi khi mạng tắc nghẽn"
+        ],
+        "questions": [
+          {"bloom_level": 2, "text": "Kiểm soát luồng trong TCP nhằm giải quyết vấn đề gì?"},
+          {"bloom_level": 3, "text": "Nếu ứng dụng bên nhận đọc dữ liệu rất chậm, TCP bên gửi sẽ phản ứng thế nào?"},
+          {"bloom_level": 4, "text": "Kiểm soát luồng và kiểm soát tắc nghẽn khác nhau ở điểm nào, khi cả hai đều làm chậm bên gửi?"}
+        ]
+      }
+    ]
+  },
+  "cases": [
+    {"id": "c1-strong-1", "concept_id": "c1", "question": "Hai trình duyệt khác nhau cùng kết nối tới cổng 80 của một máy chủ web. Máy chủ phân biệt dữ liệu của hai kết nối bằng cách nào?", "answer": "Với TCP mỗi socket được xác định bằng bộ bốn IP nguồn, cổng nguồn, IP đích, cổng đích. Hai trình duyệt có IP hoặc cổng nguồn khác nhau nên dù cùng cổng đích 80, đoạn của mỗi bên vẫn được đưa vào socket riêng của kết nối đó. Ví dụ máy A cổng 50000 và máy B cổng 50000 vẫn khác nhau vì IP nguồn khác.", "expected_action": "next_concept"},
+    {"id": "c1-strong-2", "concept_id": "c1", "question": "Vì sao UDP chỉ cần IP đích và cổng đích để xác định socket, còn TCP cần cả bộ bốn?", "answer": "UDP không có kết nối, socket chỉ là chỗ nhận mọi đoạn gửi tới cặp IP đích và cổng đích đó, gửi từ đâu cũng vào chung một socket, cổng nguồn chỉ để biết trả lời về đâu. TCP thì mỗi kết nối có trạng thái riêng như số thứ tự, bộ đệm, nên phải tách từng kết nối ra, mà kết nối được phân biệt bằng cả phía nguồn, vì thế cần bộ bốn. Nhờ vậy server web mới có nhiều socket cùng cổng 80.", "expected_action": "next_concept"},
+    {"id": "c1-shallow-1", "concept_id": "c1", "question": "Phân kênh ở tầng giao vận là gì, và nó dựa vào thông tin nào?", "answer": "Phân kênh là đưa dữ liệu đến đúng socket, dựa vào số hiệu cổng.", "expected_action": "probe_deeper"},
+    {"id": "c1-shallow-2", "concept_id": "c1", "question": "Hai trình duyệt khác nhau cùng kết nối tới cổng 80 của một máy chủ web. Máy chủ phân biệt dữ liệu của hai kết nối bằng cách nào?", "answer": "Máy chủ nhìn vào địa chỉ của bên gửi để biết là kết nối nào thôi ạ.", "expected_action": "probe_deeper"},
+    {"id": "c1-rote-1", "concept_id": "c1", "question": "Vì sao UDP chỉ cần IP đích và cổng đích để xác định socket, còn TCP cần cả bộ bốn?", "answer": "Với UDP, một socket được xác định bởi cặp địa chỉ IP đích, cổng đích. Với TCP, một socket được xác định bởi bộ bốn IP nguồn, cổng nguồn, IP đích, cổng đích.", "expected_action": "probe_deeper", "rote": true},
+    {"id": "c1-misconception-1", "concept_id": "c1", "question": "Hai trình duyệt khác nhau cùng kết nối tới cổng 80 của một máy chủ web. Máy chủ phân biệt dữ liệu của hai kết nối bằng cách nào?", "answer": "Mỗi cổng chỉ mở được một socket thôi, nên khi có người thứ hai thì máy chủ phải chuyển người đó sang một cổng khác như 81 hay 8080 để phân biệt.", "expected_action": "challenge"},
+    {"id": "c1-misconception-2", "concept_id": "c1", "question": "Phân kênh ở tầng giao vận là gì, và nó dựa vào thông tin nào?", "answer": "Phân kênh là chia dữ liệu cho đúng ứng dụng, tầng giao vận dựa vào địa chỉ MAC trong gói để biết gửi cho chương trình nào.", "expected_action": "challenge"},
+    {"id": "c1-dontknow-1", "concept_id": "c1", "question": "Phân kênh ở tầng giao vận là gì, và nó dựa vào thông tin nào?", "answer": "Em chưa học kỹ phần này, em không biết ạ.", "expected_action": "hint"},
+    {"id": "c1-wrong-1", "concept_id": "c1", "question": "Hai trình duyệt khác nhau cùng kết nối tới cổng 80 của một máy chủ web. Máy chủ phân biệt dữ liệu của hai kết nối bằng cách nào?", "answer": "Dạ chắc là do router ở giữa đánh dấu gói nào của ai rồi gửi tới máy chủ ạ.", "expected_action": "hint"},
+    {"id": "c1-clarify-1", "concept_id": "c1", "question": "Phân kênh ở tầng giao vận là gì, và nó dựa vào thông tin nào?", "answer": "Thầy ơi phân kênh với dồn kênh là cùng một việc hay hai việc khác nhau ạ, em hơi lẫn câu hỏi.", "expected_action": "clarify"},
+
+    {"id": "c2-strong-1", "concept_id": "c2", "question": "Một ứng dụng gọi video thời gian thực nên dùng UDP hay TCP? Vì sao?", "answer": "Nên dùng UDP. Gọi video cần độ trễ thấp, mất vài khung hình thì chỉ hơi giật chứ không sao, còn nếu dùng TCP thì gói mất sẽ bị gửi lại và các gói sau phải chờ cho đúng thứ tự, lại còn bị kiểm soát tắc nghẽn hạ tốc độ, hình sẽ bị khựng. UDP đẩy dữ liệu đi ngay, ứng dụng tự quyết định bỏ qua gói cũ. Chính vì thế các ứng dụng thời gian thực và cả QUIC đều chạy trên UDP.", "expected_action": "next_concept"},
+    {"id": "c2-strong-2", "concept_id": "c2", "question": "Vì sao DNS chọn UDP dù UDP không đảm bảo độ tin cậy?", "answer": "Truy vấn DNS rất ngắn, chỉ một câu hỏi một câu trả lời. Nếu dùng TCP thì phải bắt tay ba bước, mất thêm một RTT trước khi hỏi, chậm gần gấp đôi. Máy chủ DNS lại phục vụ rất nhiều máy khách, UDP không giữ trạng thái kết nối nên đỡ tốn tài nguyên. Còn nếu gói bị mất thì máy khách chỉ cần hỏi lại sau một khoảng chờ, tự lo độ tin cậy ở tầng ứng dụng là đủ.", "expected_action": "next_concept"},
+    {"id": "c2-shallow-1", "concept_id": "c2", "question": "Một ứng dụng gọi video thời gian thực nên dùng UDP hay TCP? Vì sao?", "answer": "Dùng UDP vì nó nhanh hơn.", "expected_action": "probe_deeper"},
+    {"id": "c2-rote-1", "concept_id": "c2", "question": "Vì sao DNS chọn UDP dù UDP không đảm bảo độ tin cậy?", "answer": "Không cần thiết lập kết nối, nên không mất thêm thời gian khứ hồi trước khi gửi dữ liệu. Đây là lý do DNS dùng UDP.", "expected_action": "probe_deeper", "rote": true},
+    {"id": "c2-rote-2", "concept_id": "c2", "question": "Khác nhau chính giữa UDP và TCP là gì?", "answer": "UDP không kết nối và không tin cậy, TCP hướng kết nối và tin cậy. UDP tiêu đề 8 byte, TCP tối thiểu 20 byte. UDP dùng cho DNS, gọi thoại, trò chơi trực tuyến, QUIC. TCP dùng cho web, thư điện tử, truyền tệp.", "expected_action": "probe_deeper", "rote": true},
+    {"id": "c2-misconception-1", "concept_id": "c2", "question": "Khác nhau chính giữa UDP và TCP là gì?", "answer": "UDP thì hoàn toàn không kiểm tra lỗi gì cả nên dữ liệu hỏng vẫn được đưa lên ứng dụng, còn TCP có checksum nên mới phát hiện được lỗi.", "expected_action": "challenge"},
+    {"id": "c2-misconception-2", "concept_id": "c2", "question": "Một ứng dụng gọi video thời gian thực nên dùng UDP hay TCP? Vì sao?", "answer": "UDP, vì UDP lúc nào cũng nhanh hơn TCP, nên kể cả tải file lớn cũng nên dùng UDP cho nhanh, chỉ là phải chấp nhận mất dữ liệu.", "expected_action": "challenge"},
+    {"id": "c2-dontknow-1", "concept_id": "c2", "question": "Vì sao DNS chọn UDP dù UDP không đảm bảo độ tin cậy?", "answer": "Dạ cái này em chịu, em không nhớ DNS dùng gì.", "expected_action": "hint"},
+    {"id": "c2-wrong-1", "concept_id": "c2", "question": "Khác nhau chính giữa UDP và TCP là gì?", "answer": "UDP là giao thức của tầng mạng còn TCP là của tầng ứng dụng ạ.", "expected_action": "hint"},
+    {"id": "c2-thinking-1", "concept_id": "c2", "question": "Vì sao DNS chọn UDP dù UDP không đảm bảo độ tin cậy?", "answer": "Ừm để em nghĩ đã… DNS thì nó hỏi tên miền… ờ… chờ em chút ạ.", "expected_action": "encourage"},
+
+    {"id": "c3-strong-1", "concept_id": "c3", "question": "Với đường truyền 1 Gbps, RTT 30 ms và gói 1.000 byte, hiệu suất của dừng và chờ khoảng bao nhiêu?", "answer": "Thời gian đẩy gói lên đường truyền là 8000 bit chia 10 mũ 9 bit/s bằng 8 micro giây. Hiệu suất bằng L/R chia cho RTT cộng L/R, tức 0,008 ms chia 30,008 ms, khoảng 0,027%. Nghĩa là gần như toàn bộ thời gian bên gửi chỉ ngồi chờ ACK. RTT càng lớn so với L/R thì càng lãng phí, nên mới cần gửi nhiều gói cùng lúc.", "expected_action": "next_concept"},
+    {"id": "c3-strong-2", "concept_id": "c3", "question": "Đường ống cải thiện hiệu suất bằng cách nào, và nó đòi hỏi thêm những gì?", "answer": "Thay vì gửi một gói rồi đứng chờ, bên gửi đẩy liền nhiều gói trong lúc ACK của gói đầu còn chưa về, nên thời gian RTT được lấp đầy. Ví dụ ba gói trên đường thì hiệu suất tăng gần gấp ba. Đổi lại phải có dải số thứ tự lớn hơn vì nhiều gói chưa báo nhận cùng lúc, và cần bộ đệm ở bên gửi để giữ gói chờ gửi lại, bên nhận để giữ gói đến sai thứ tự nếu dùng lặp lại có chọn lọc.", "expected_action": "next_concept"},
+    {"id": "c3-shallow-1", "concept_id": "c3", "question": "Vì sao giao thức dừng và chờ lại sử dụng đường truyền kém hiệu quả?", "answer": "Vì phải chờ ACK rồi mới gửi tiếp.", "expected_action": "probe_deeper"},
+    {"id": "c3-shallow-2", "concept_id": "c3", "question": "Đường ống cải thiện hiệu suất bằng cách nào, và nó đòi hỏi thêm những gì?", "answer": "Đường ống là gửi nhiều gói một lúc nên nhanh hơn.", "expected_action": "probe_deeper"},
+    {"id": "c3-rote-1", "concept_id": "c3", "question": "Vì sao giao thức dừng và chờ lại sử dụng đường truyền kém hiệu quả?", "answer": "Hiệu suất sử dụng đường truyền là U bằng L/R chia cho RTT cộng L/R, bằng 0,00027.", "expected_action": "probe_deeper", "rote": true},
+    {"id": "c3-misconception-1", "concept_id": "c3", "question": "Vì sao giao thức dừng và chờ lại sử dụng đường truyền kém hiệu quả?", "answer": "Vì đường truyền có băng thông thấp quá, nếu nâng lên đường 10 Gbps thì dừng và chờ sẽ hết chậm.", "expected_action": "challenge"},
+    {"id": "c3-misconception-2", "concept_id": "c3", "question": "Đường ống cải thiện hiệu suất bằng cách nào, và nó đòi hỏi thêm những gì?", "answer": "Đường ống làm tăng băng thông của đường truyền lên gấp nhiều lần nên dữ liệu chạy nhanh hơn, không cần thêm gì cả.", "expected_action": "challenge"},
+    {"id": "c3-dontknow-1", "concept_id": "c3", "question": "Với đường truyền 1 Gbps, RTT 30 ms và gói 1.000 byte, hiệu suất của dừng và chờ khoảng bao nhiêu?", "answer": "Em không biết tính cái này ạ.", "expected_action": "hint"},
+    {"id": "c3-wrong-1", "concept_id": "c3", "question": "Với đường truyền 1 Gbps, RTT 30 ms và gói 1.000 byte, hiệu suất của dừng và chờ khoảng bao nhiêu?", "answer": "Chắc khoảng 90% ạ, vì đường 1 Gbps nhanh mà.", "expected_action": "hint"},
+    {"id": "c3-offtopic-1", "concept_id": "c3", "question": "Vì sao giao thức dừng và chờ lại sử dụng đường truyền kém hiệu quả?", "answer": "Thầy ơi phần này có trong đề thi cuối kỳ không ạ, với lại mấy giờ thì mình nghỉ?", "expected_action": "redirect"},
+
+    {"id": "c4-strong-1", "concept_id": "c4", "question": "Kiểm soát luồng và kiểm soát tắc nghẽn khác nhau ở điểm nào, khi cả hai đều làm chậm bên gửi?", "answer": "Kiểm soát luồng là để không làm tràn bộ đệm của bên nhận, bên nhận gửi về rwnd là chỗ còn trống. Kiểm soát tắc nghẽn là để không làm quá tải mạng ở giữa, bên gửi tự đoán tắc nghẽn qua hết giờ hay ba ACK trùng và giữ cwnd. Cùng làm chậm nhưng lý do khác nhau: một bên vì máy nhận đọc chậm, một bên vì mạng đông. Thực tế bên gửi lấy min của cwnd và rwnd để giới hạn dữ liệu chưa báo nhận.", "expected_action": "next_concept"},
+    {"id": "c4-strong-2", "concept_id": "c4", "question": "Nếu ứng dụng bên nhận đọc dữ liệu rất chậm, TCP bên gửi sẽ phản ứng thế nào?", "answer": "Bộ đệm nhận sẽ đầy dần, nên rwnd mà bên nhận quảng bá nhỏ lại. Bên gửi phải giữ lượng dữ liệu đã gửi mà chưa được báo nhận không vượt quá rwnd, nên tự gửi chậm lại. Nếu rwnd về 0 thì bên gửi dừng gửi dữ liệu thật nhưng vẫn gửi đoạn thăm dò 1 byte, để khi ứng dụng đọc bớt và có chỗ trống thì bên nhận báo rwnd mới, tránh bị treo mãi.", "expected_action": "next_concept"},
+    {"id": "c4-shallow-1", "concept_id": "c4", "question": "Kiểm soát luồng trong TCP nhằm giải quyết vấn đề gì?", "answer": "Để bên gửi không gửi quá nhanh làm tràn bộ đệm bên nhận.", "expected_action": "probe_deeper"},
+    {"id": "c4-rote-1", "concept_id": "c4", "question": "Kiểm soát luồng trong TCP nhằm giải quyết vấn đề gì?", "answer": "rwnd bằng RcvBuffer trừ LastByteRcvd trừ LastByteRead, và LastByteSent trừ LastByteAcked nhỏ hơn hoặc bằng rwnd.", "expected_action": "probe_deeper", "rote": true},
+    {"id": "c4-shallow-2", "concept_id": "c4", "question": "Nếu ứng dụng bên nhận đọc dữ liệu rất chậm, TCP bên gửi sẽ phản ứng thế nào?", "answer": "Bên gửi sẽ gửi chậm lại ạ.", "expected_action": "probe_deeper"},
+    {"id": "c4-misconception-1", "concept_id": "c4", "question": "Kiểm soát luồng và kiểm soát tắc nghẽn khác nhau ở điểm nào, khi cả hai đều làm chậm bên gửi?", "answer": "Hai cái này thật ra là một thôi ạ, đều là giảm tốc độ gửi khi mạng bị nghẽn, chỉ là gọi tên khác nhau.", "expected_action": "challenge"},
+    {"id": "c4-misconception-2", "concept_id": "c4", "question": "Kiểm soát luồng và kiểm soát tắc nghẽn khác nhau ở điểm nào, khi cả hai đều làm chậm bên gửi?", "answer": "Kiểm soát luồng là bên nhận báo bộ đệm, còn tắc nghẽn là khi router bị đầy thì router gửi thông báo thẳng về cho bên gửi bảo giảm tốc độ.", "expected_action": "challenge"},
+    {"id": "c4-dontknow-1", "concept_id": "c4", "question": "Kiểm soát luồng trong TCP nhằm giải quyết vấn đề gì?", "answer": "Em không biết ạ.", "expected_action": "hint"},
+    {"id": "c4-wrong-1", "concept_id": "c4", "question": "Nếu ứng dụng bên nhận đọc dữ liệu rất chậm, TCP bên gửi sẽ phản ứng thế nào?", "answer": "Bên gửi sẽ gửi nhanh hơn để bù lại cho kịp ạ.", "expected_action": "hint"},
+    {"id": "c4-clarify-1", "concept_id": "c4", "question": "Nếu ứng dụng bên nhận đọc dữ liệu rất chậm, TCP bên gửi sẽ phản ứng thế nào?", "answer": "Ý thầy là ứng dụng đọc chậm hay là mạng chậm ạ? Em chưa rõ câu hỏi lắm.", "expected_action": "clarify"},
+    {"id": "c4-thinking-1", "concept_id": "c4", "question": "Kiểm soát luồng và kiểm soát tắc nghẽn khác nhau ở điểm nào, khi cả hai đều làm chậm bên gửi?", "answer": "Hmm… em đang nghĩ… luồng thì liên quan bộ đệm thì phải… để em nghĩ thêm chút.", "expected_action": "encourage"},
+    {"id": "c4-offtopic-1", "concept_id": "c4", "question": "Kiểm soát luồng trong TCP nhằm giải quyết vấn đề gì?", "answer": "Hôm qua em xem trận bóng đá hay lắm thầy ạ.", "expected_action": "redirect"}
+  ]
+}

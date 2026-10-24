@@ -77,6 +77,18 @@ flowchart TB
 
 Ngưỡng và trọng số nằm ở đầu `app/interview/director.py`.
 
+### Đo độ chính xác của evaluator
+
+Làm sao biết AI chấm đúng? `evals/evaluator_cases.json` có 42 câu trả lời mẫu cho 4 chủ đề của file mẫu Mạng máy tính chương 3, mỗi câu được gắn nhãn tay hành động mà giáo viên sẽ làm: chuyển chủ đề, hỏi sâu, phản biện, gợi ý, diễn đạt lại, động viên hoặc kéo về câu hỏi. Bộ này gồm cả câu trả lời đọc thuộc nguyên văn tài liệu, câu đúng nhưng nông và các hiểu lầm hay gặp.
+
+Script cho evaluator chấm từng câu, đưa kết quả qua đúng `director.decide()` mà ứng dụng dùng, rồi so với nhãn tay: tỉ lệ khớp, Cohen's kappa, precision/recall từng hành động, ma trận nhầm lẫn, tỉ lệ bắt được dấu hiệu học thuộc và danh sách các ca lệch.
+
+```powershell
+.\.venv\Scripts\python.exe -m evals.evaluator_eval
+```
+
+Cần `GEMINI_API_KEY` trong `.env`; mỗi lần chạy gọi `BRAIN_MODEL` 42 lần (free tier nên giữ `--concurrency 1` hoặc `2`). Báo cáo được ghi vào `evals/results/`.
+
 ## Cấu hình (`.env`)
 
 | Biến | Mặc định | Ý nghĩa |
@@ -178,6 +190,7 @@ app/
     report.py        Báo cáo cuối buổi
 web/                 Giao diện (HTML/CSS/JS thuần, AudioWorklet cho micro và loa)
 tests/               Unit test và test luồng đầy đủ với LLM giả
+evals/               Bộ câu trả lời gắn nhãn tay và script đo evaluator với Gemini thật
 ```
 
 ## Hướng phát triển tiếp
