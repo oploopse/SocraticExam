@@ -110,6 +110,23 @@ Khi `APP_ACCESS_TOKEN` được cấu hình, API và WebSocket yêu cầu đăng
 Giao diện sẽ hỏi token lần đầu và lưu token trong cookie HttpOnly của phiên trình duyệt.
 Không commit file `.env`; chỉ commit `.env.example` với placeholder.
 
+## Triển khai lên Render
+
+Cả backend lẫn giao diện `web/` chạy chung một service, nên không cần sửa URL API hay bật CORS. Không dùng Vercel cho backend, vì serverless không giữ được WebSocket giọng nói và trạng thái phiên trong RAM.
+
+1. Đẩy repo lên GitHub.
+2. Trên [Render](https://dashboard.render.com), chọn **New > Blueprint**, trỏ tới repo. Render đọc `render.yaml` và tạo service `socratic-exam`.
+3. Khi được hỏi, điền `GEMINI_API_KEY`. `APP_ACCESS_TOKEN` được sinh ngẫu nhiên; mở tab **Environment** của service để xem và gửi token cho người dùng thử.
+4. Đợi build xong, mở `https://<tên-service>.onrender.com`, nhập token, rồi thử tải tài liệu và nói chuyện.
+
+Muốn đổi model, thời lượng hay các biến khác ở bảng cấu hình phía trên, sửa trong tab **Environment**; Render tự khởi động lại service. Mỗi lần push lên nhánh chính, Render tự deploy lại.
+
+Lưu ý với gói free:
+
+- Service ngủ sau 15 phút không có ai dùng; lần mở đầu tiên sau đó mất khoảng một phút để chạy lại.
+- Ổ đĩa không lưu lâu dài: tài liệu và phiên trong `data/` mất mỗi lần deploy, restart hoặc ngủ dậy. Muốn giữ dữ liệu, nâng lên gói trả phí, gắn **Disk** (ví dụ mount ở `/var/data`) và đặt `DATA_DIR=/var/data`.
+- Chỉ chạy một instance và một worker, vì phiên phỏng vấn giữ trạng thái trong bộ nhớ.
+
 ## Lưu ý về free tier
 
 - Quota free tính theo project và Google không công bố con số cố định; xem trong AI Studio. Nếu bị lỗi `429`, `503` hoặc `1011` (hết quota hoặc model quá tải), ứng dụng tự thử model dự phòng. Có thể đổi model trong `.env` rồi chạy lại `.\.venv\Scripts\python.exe -m app`.

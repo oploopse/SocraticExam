@@ -1,0 +1,31 @@
+# Blueprint Render: chạy cả backend FastAPI lẫn giao diện web/ trong một service.
+# Hướng dẫn: README, mục "Triển khai lên Render".
+services:
+  - type: web
+    name: socratic-exam
+    runtime: python
+    plan: free
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    # Một worker: phiên phỏng vấn và cầu nối Gemini Live giữ trạng thái trong RAM.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --proxy-headers
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      # Tin header X-Forwarded-* từ proxy của Render để app nhận ra HTTPS (cookie Secure, wss://).
+      - key: FORWARDED_ALLOW_IPS
+        value: "*"
+      # Điền trên dashboard khi tạo Blueprint; không commit key vào repo.
+      - key: GEMINI_API_KEY
+        sync: false
+      # Render tự sinh chuỗi ngẫu nhiên; xem và gửi cho người dùng thử ở tab Environment.
+      - key: APP_ACCESS_TOKEN
+        generateValue: true
+      - key: BRAIN_MODEL
+        value: gemini-3.8-flash
+      - key: FAST_MODEL
+        value: gemini-3.5-flash-lite
+      - key: LIVE_MODEL
+        value: gemini-3.8-live
+      - key: INTERVIEW_MINUTES
+        value: "15"
